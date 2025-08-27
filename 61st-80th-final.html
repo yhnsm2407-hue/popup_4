@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 슬라이더</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 'Pretendard' 폰트 import 및 사용 */
+        @import url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+        body {
+            font-family: 'Pretendard-Regular', sans-serif;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Solvay_conference_1927.jpg/960px-Solvay_conference_1927.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        /* 슬라이더 컨테이너 커스텀 스크롤바 */
+        .slider-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .slider-container::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+
+        .slider-container::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+
+        /* 팝업 오버레이 애니메이션 */
+        .popup-overlay {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .popup-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 팝업 컨테이너 애니메이션 */
+        .popup-container {
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .popup-overlay.active .popup-container {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- 메인 컨테이너 -->
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">🎉61위~80위</h1>
+
+        <!-- 슬라이더 컨테이너 -->
+        <div id="slider-container" class="relative flex overflow-x-auto gap-4 p-4 -mx-4 slider-container">
+            <!-- 이미지 아이템들 (JavaScript에 의해 동적으로 추가될 예정) -->
+        </div>
+
+        <!-- 슬라이더 탐색 버튼 -->
+        <div class="flex justify-center mt-6 space-x-4">
+            <button id="prevBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <button id="nextBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-full transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 팝업 오버레이 -->
+    <div id="popup-overlay" class="popup-overlay fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <!-- 팝업 컨테이너 -->
+        <div class="popup-container bg-white rounded-2xl shadow-2xl overflow-hidden max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <!-- 닫기 버튼 -->
+            <div class="flex justify-end p-4">
+                <button id="close-popup" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <!-- 팝업 이미지 및 설명 컨테이너 -->
+            <div class="flex-grow overflow-y-auto">
+                <img id="popup-image" src="" alt="확대 이미지" class="w-full h-auto object-cover rounded-t-lg">
+                <div class="p-6">
+                    <h2 id="popup-title" class="text-2xl font-bold text-gray-800 mb-2"></h2>
+                    <p id="popup-description" class="text-gray-600 text-base leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 이미지 데이터 배열 (오류가 발생했던 이미지 URL을 안정적인 링크로 교체했습니다.)
+        const images = [
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Uber_taxi_in_Tomsk_01.jpg/1920px-Uber_taxi_in_Tomsk_01.jpg',
+                title: '61위 승차 공유 서비스 등장(2010)',
+                description: '2010년 스마트폰 앱을 사용한 승차 공유 서비스 우버가 등장했습니다. 우버는 교통 산업과 개인 이동 방식을 바꿨습니다. <br>사진 출처:위키 미디어, Ilya Plekhanov - Own work, CC BY-SA 4.0'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/c/c6/Second_Life_11th_Birthday_Live_Drax_Files_Radio_Hour.jpg', 
+                title: '62위 첫 메타버스 서비스(2004~)',
+                description: '메타버스는 사람들 간의 상호작용과 경제 활동이 가능한 디지털 가상 세계입니다. 디지털 놀이터, 사회 및 경제 활동의 새로운 장소가 되고 있습니다. <br>사진 출처: 위키 미디어, HyacintheLuynes - Own work, CC BY-SA 3.0'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/c/cf/Conrad_von_Soest%2C_%27Brillenapostel%27_%281403%29.jpg',
+                title: '63위 안경을 쓴 사도(1403)',
+                description: '안경은 13세기 시력을 보완하기 위해 렌즈를 사용해 착용형으로 만들어 졌습니다. 안경은 사람들의 일상 생활과 학문 활동에 큰 도움을 주었습니다.<br>사진 출처: 위키피디아, 퍼블릭도메인 / <안경 사도>-콘라드 폰 소스트(1403)'
+            },
+            {
+                url: 'https://www.science.go.kr/resources/web/res/img/swiper-image/020401/image-5.jpg',
+                title: '64위 장영실의 자격루 및 관측기구(1400s)',
+                description: '장영실은 1400년대 자동 물시계인 자격루와 같이 다양한 관측 기구들을 발명해 조선시대 과학기술 발전에 크게 기여했습니다. 장영실의 자격루 모형은 국립중앙과학관 한국과학기술사관에서 볼 수 있습니다.<br> 사진 출처: 국립중앙과학관 홈페이지'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Yersinia_pestis_fluorescent.jpeg/1024px-Yersinia_pestis_fluorescent.jpeg',
+                title: '65위 알렉상드르 예르생의 페스트균 발견(1894)',
+                description: '알렉승드르 예르생은 1984년 페스트(흑사병)의 원인균인 페스트균을 발견했습니다. 페스트균의 발견은 전염병 연구와 예방 기술 발전에 중요한 역할을 했습니다.<br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Luigi_Galvani_Experiment.jpeg/640px-Luigi_Galvani_Experiment.jpeg',
+                title: '66위 루이지 갈바니의 전기 자극 실험(1780)',
+                description: '루이지 갈바니는 개구리 다리에 전기 자극을 주어 근육이 수축하는 현상을 발견했습니다. 이 현상을 기반으로 신경과 근육 사이의 생체 전기 신호에 대한 기초를 밝혀 신경과학 발전에 큰 기여를 했습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Baro_1.png',
+                title: '67위 에반젤리스타 토리첼리의 기압계(1898~1903)',
+                description: '에반젤리스타 토리첼리는 1643년 수은을 이용해 최초의 기압계를 발명했습니다. 토리첼리의 기압계는 대기압을 측정하고 기상학 발전의 기초를 세웠습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Lyell_Principles_frontispiece.jpg/800px-Lyell_Principles_frontispiece.jpg',
+                title: '68위 찰스 라이엘의 <지질학의 원리>(1830)',
+                description: '찰스 라이엘은 1830년대에 현재는 과거의 열쇠라고 주장했습니다. 그는 지구의 지질 변화가 오랜 시간 동안 천천히 일어났음을 주장해 현대 지질학의 기초를 세웠습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Double-slit.svg/600px-Double-slit.svg.png?20250227184621',
+                title: '69위 토마스 영의 빛의 간섭 실험(1801)',
+                description: '토머스 영은 1801년 빛의 이중 슬릿 간섭 실험을 실시했습니다. 그의 실험은 빛이 파동이라는 사실을 증명했고 광학과 물리학 발전에 큰 기여를 했습니다. <br>사진 출처: 위키미디어, By 원본: NekoJaNekoJa 벡터: Johannes Kalliauer - 다음을 기초로 한 자작: Double-slit.PNG:, CC BY-SA 4.0'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Barbara_McClintock_(1902-1992)_shown_in_her_laboratory_in_1947.jpg/960px-Barbara_McClintock_(1902-1992)_shown_in_her_laboratory_in_1947.jpg?20160705225858',
+                title: '70위 바버라 매클린톡의 전이인자 발견(1948)',
+                description: '1948년 바버라 매클린톡은 옥수수에서 위치가 이동하는 유전자(전이 유전자)를 발견했습니다. 전이 유전자에 대한 연구는 유전자 구조와 기능 이해에 큰 기여를 했습니다. <br>사진 출처: By Smithsonian Institution/Science Service; Restored by Adam Cuerden - Flickr: Barbara McClintock (1902-1992)Smithsonian original'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/이휘소_(19740924).png?20210416133540',
+                title: '71위 이휘소의 우주물리학 연구(1960s-1970s)',
+                description: '이휘소는 1960년에서 70년대에 우주선과 입자물리학 연구를 통해 우주의 기본 입자와 힘의 상호작용에 대해 연구했습니다. 이휘소 박사의 연구는 한국 뿐만 아니라 전세계 우주 물리학 발전에 기여했습니다. <br>사진 출처: 위키미디어, By 미상 - 경향신문,'
+            },
+            {
+                url: 'https://t1.daumcdn.net/news/202410/14/moneytoday/20241014165548295whjg.gif',
+                title: '72위 스페이스 X(2002~)',
+                description: '스페이스 X 는 재사용 가능한 로켓을 실용화해 발사 비용을 대폭 낮추었습니다. 화성 유인 탐사와 이주를 위한 초대형 우주선 스타쉽, 전세계 초고속 인터넷 공급을 위한 스타링크 기술등 스페이스 X에서 개발 중인 기술은 우주에 대한 접근성을 넓히고 인류의 행성 간 탐사 시대를 앞당기고 있습니다. <br>사진 출처: 스페이스 X 공식 X 계정'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/View_from_the_Window_at_Le_Gras%2C_Joseph_Nic%C3%A9phore_Ni%C3%A9pce%2C_uncompressed_UMN_source.png/1280px-View_from_the_Window_at_Le_Gras%2C_Joseph_Nic%C3%A9phore_Ni%C3%A9pce%2C_uncompressed_UMN_source.png',
+                title: '73위 최초의 사진과 카메라의 발전(19세기~)',
+                description: '조지 니엡스가 1827년 찍은 창밖의 풍경입니다. 최초의 사진은 찍는데 8시간, 현상하는데 며칠이 걸렸습니다. 이후 카메라의 발전과 사진 촬영 기술의 혁신은 시각 기록, 예술, 과학 연구에 큰 변화를 가져왔습니다. <br>사진 출처: 위키미디어, By Joseph Nicéphore Niépce - Rebecca A. Moss'
+            },
+            {
+                url: 'https://media.asan.go.kr/upload_data/m_news/a01tq766.png',
+                title: '74위 스마트 농업과 농업의 자동화(2007)',
+                description: '2000년대 이후 스마트 농업은 세서, 인공지능, 자동화 기술들을 사용해 크게 발전했습니다. 작물의 생장 환경을 실시간으로 관리하며, 생산성을 크게 향상시키고 자원을 절약 할 수 있게했습니다. <br>사진 출처: 아산시 미디어'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/C60_Molecule.svg/1024px-C60_Molecule.svg.png',
+                title: '75위 나노기술 및 나노소재 발전(1980s~)',
+                description: '1980년대 부터 나노 기술과 소재에 대한 연구가 많이 이루어지기 시작했습니다. 1985년 풀러렌이 발견된 이후 다양한 나노소재들이 발견 또는 합성되었습니다. 나노 기술과 소재는 초소형 전자기기, 신약 개발, 신소재 등 다양한 분야에 적용되고 연구되고 있습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/BiodegradablePlasticUtensils2.jpg/960px-BiodegradablePlasticUtensils2.jpg?20070222201908',
+                title: '76위 플라스틱 분해 및 환경 정화 기술(2010년대~)',
+                description: '플라스틱 분해 기술은 미생물, 효소, 화학적 방법을 통해 발전 되고 있습니다. 플라스틱을 분해, 재활용하는 방법으로 환경 오염을 줄이고 지속 가능한 자원 순환을 촉진하고 있습니다. <br>사진 출처: 위키미디어, 퍼블릭 도메인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/5/56/Parasagittal_MRI_of_human_head_in_patient_with_benign_familial_macrocephaly_prior_to_brain_injury_%28ANIMATED%29.gif?20080716191707',
+                title: '77위 뇌과학 및 신경과학(2000s)',
+                description: '2000년대 이후 뇌과학과 신경과학은 뇌의 구조와 기능, 신경 회로를 정밀하게 분석할 수 있게 되었습니다. 연구 결과는 인지, 기억, 행동 원리를 밝히고, 뇌질환 치료 등 다양한 분야에 응용되고 있습니다. <br>사진 출처: 위키미디어, By Dwayne Reed, CC BY-SA 3.0'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Bardeen_Shockley_Brattain_1948.JPG/1280px-Bardeen_Shockley_Brattain_1948.JPG',
+                title: '78위 최초의 반도체 기술 개발(1864)',
+                description: '1947년 미국 벨 연구소에서 반도체 재료를 사용하여 최초로 트랜지스터를 개발했습니다. 트랜지스터의 등장은 반도체 기술 발전의 출발점이 되어 현대의 컴퓨터, 통신기기, 스마트폰등 모든 디지털 기술의 기반이 되었습니다. <br>사진 출처: 위키미디어, 퍼블릭도메인 / 왼쪽부터 순서대로 존 바딘, 윌리엄 쇼클리, 윌터 브라타인'
+            },
+            {
+                url: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/Sorting_quicksort_anim.gif',
+                title: '79위 알고리즘 발전(1900~)',
+                description: '알고리즘은 20세기 부터 발전하여 문제 해결과 데이터 처리 방법의 체계화를 가져왔습니다. 알고리즘의 발전은 컴퓨터 과학과 인공지능 발전의 핵심 기반이 되었습니다. <br>사진 출처:  위키미디어, By en:User:RolandH, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=1965827'
+            },
+            {
+                url: 'https://images.unsplash.com/photo-1549563316-5384a923453e?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                title: '80위 3D 프린팅 기술(1980s~)',
+                description: '1980년대 개발된 3D 프린팅은 디지털 설계도를 바탕으로 재료를 층층히 쌓아 물체를 만드는 기술입니다. 맞춤 제작이 가능해 의료, 건축, 우주 등 다양한 분야에서 활용되고 있습니다. <br>사진 출처: Unplash'
+            }
+        ];
+
+        // DOM 요소 가져오기
+        const sliderContainer = document.getElementById('slider-container');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const popupOverlay = document.getElementById('popup-overlay');
+        const closePopupBtn = document.getElementById('close-popup');
+        const popupImage = document.getElementById('popup-image');
+        const popupTitle = document.getElementById('popup-title');
+        const popupDescription = document.getElementById('popup-description');
+        
+        // 이미지 아이템 생성
+        function createSliderItems() {
+            images.forEach(image => {
+                const imgContainer = document.createElement('div');
+                // 반응형 클래스로 변경: 화면 너비에 따라 크기 조절
+                imgContainer.className = 'flex-shrink-0 w-64 h-64 rounded-xl overflow-hidden shadow-md cursor-pointer transform transition-transform duration-300 hover:scale-105';
+                imgContainer.onclick = () => openPopup(image);
+
+                const img = document.createElement('img');
+                img.src = image.url;
+                img.alt = image.title;
+                img.className = 'w-full h-full object-cover';
+                imgContainer.appendChild(img);
+                
+                // 사진 위에 제목을 표시하는 요소 추가
+                const titleOverlay = document.createElement('div');
+                titleOverlay.className = 'absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-50 text-white text-center text-sm font-bold truncate rounded-b-xl';
+                titleOverlay.textContent = image.title;
+                imgContainer.appendChild(titleOverlay);
+                
+                sliderContainer.appendChild(imgContainer);
+            });
+        }
+
+        // 팝업 열기 함수
+        function openPopup(image) {
+            popupImage.src = image.url;
+            popupImage.alt = image.title;
+            popupTitle.textContent = image.title;
+            popupDescription.innerHTML = image.description;
+            popupOverlay.classList.add('active');
+        }
+
+        // 팝업 닫기 함수
+        function closePopup() {
+            popupOverlay.classList.remove('active');
+        }
+
+        // 슬라이더 스크롤 함수
+        function scrollSlider(direction) {
+            const scrollAmount = 300; // 스크롤할 거리 (px)
+            const currentScroll = sliderContainer.scrollLeft;
+
+            if (direction === 'next') {
+                sliderContainer.scrollTo({
+                    left: currentScroll + scrollAmount,
+                    behavior: 'smooth'
+                });
+            } else {
+                sliderContainer.scrollTo({
+                    left: currentScroll - scrollAmount,
+                    behavior: 'smooth'
+                });
+            }
+        }
+        
+        // 이벤트 리스너 설정
+        document.addEventListener('DOMContentLoaded', () => {
+            createSliderItems();
+            prevBtn.addEventListener('click', () => scrollSlider('prev'));
+            nextBtn.addEventListener('click', () => scrollSlider('next'));
+            closePopupBtn.addEventListener('click', closePopup);
+            
+            // 팝업 외부 클릭 시 닫기
+            popupOverlay.addEventListener('click', (e) => {
+                if (e.target.id === 'popup-overlay') {
+                    closePopup();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
